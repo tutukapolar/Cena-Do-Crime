@@ -6,7 +6,50 @@ function el(tag,props={},txt=''){const node=document.createElement(tag);Object.a
 function inputLabel(text,value,callback,kind='text'){const label=el('label',{},text);const input=el(kind==='textarea'?'textarea':'input');if(kind!=='textarea')input.type=kind;input.value=value??'';input.addEventListener('input',()=>callback(input.value));label.append(input);return label}
 function renderQuestions(){const container=$('#questionEditor');container.replaceChildren();questions.forEach((q,i)=>{const card=el('div',{className:'qedit'}),head=el('div',{className:'toolbar'});head.append(el('strong',{},`PERGUNTA ${i+1}`));const buttons=el('div',{className:'toolbar'});for(const [name,action] of [['↑',()=>move(i,-1)],['↓',()=>move(i,1)],['Excluir',()=>{questions.splice(i,1);renderQuestions()}]]){const b=el('button',{className:'small secondary',type:'button'},name);b.addEventListener('click',action);buttons.append(b)}head.append(buttons);card.append(head,inputLabel('Pergunta',q.label,v=>q.label=v),inputLabel('Texto de ajuda',q.placeholder,v=>q.placeholder=v));const selectLabel=el('label',{},'Tipo de resposta');const select=el('select');for(const [value,text] of [['text','Resposta curta'],['textarea','Resposta longa']]){const opt=el('option',{value},text);select.append(opt)}select.value=q.kind;select.addEventListener('change',()=>q.kind=select.value);selectLabel.append(select);card.append(selectLabel);const required=el('label',{},'Obrigatória '),check=el('input',{type:'checkbox',checked:q.required});check.addEventListener('change',()=>q.required=check.checked);required.append(check);card.append(required);container.append(card)})}
 function move(i,delta){const j=i+delta;if(j<0||j>=questions.length)return;[questions[i],questions[j]]=[questions[j],questions[i]];renderQuestions()}
-function reportText(r){return Object.entries(r.answers||{}).map(([id,v])=>`${id==='__team_name'?'Nome / Equipe':questions.find(q=>q.id===id)?.label||'Pergunta '+id}: ${v}`).join(' | ')}
+function orderedAnswers(r) {
+  const answers = r.answers || {};
+  const result = [];
+  const used = new Set();
+
+  // Nome da equipe sempre aparece primeiro
+  if (answers.__team_name !== undefined) {
+    result.push([
+      'NOME / EQUIPE',
+      String(answers.__team_name)
+    ]);
+    used.add('__team_name');
+  }
+
+  // Segue a ordem configurada no painel
+  const sorted = [...questions].sort(
+    (a, b) => (a.position ?? 0) - (b.position ?? 0)
+  );
+
+  for (const q of sorted) {
+    if (Object.prototype.hasOwnProperty.call(answers, q.id)) {
+      result.push([q.label, String(answers[q.id])]);
+      used.add(q.id);
+    }
+  }
+
+  // Preserva respostas de perguntas excluídas
+  for (const [id, value] of Object.entries(answers)) {
+    if (!used.has(id)) {
+      result.push([
+        `Pergunta antiga (${id.slice(0, 8)})`,
+        String(value)
+      ]);
+    }
+  }
+
+  return result;
+}
+
+function reportText(r) {
+  return orderedAnswers(r)
+    .map(([label, value]) => `${label}: ${value}`)
+    .join(' | ');
+}
 function renderReports(){const box=$('#submissions');box.replaceChildren();const query=($('#reportSearch')?.value||'').trim().toLocaleLowerCase('pt-BR');const filtered=reports.filter(r=>(new Date(r.created_at).toLocaleString('pt-BR')+' '+reportText(r)).toLocaleLowerCase('pt-BR').includes(query));$('#reportCount').textContent=String(reports.length);$('#reportSummary').textContent=`${filtered.length} de ${reports.length} relatório(s) carregado(s) — últimos 200 envios.`;if(!filtered.length){box.append(el('p',{className:'subtle'},query?'Nenhuma resposta corresponde à pesquisa.':'Nenhuma resposta recebida ainda.'));return}for(const r of filtered){const d=el('details',{className:'report'}),sum=el('summary',{},`${new Date(r.created_at).toLocaleString('pt-BR')} • ${r.answers?.__team_name||"Equipe não informada"} • Relatório ${r.id.slice(0,8)}`);d.append(sum);for(const [id,value] of Object.entries(r.answers||{})){const label=id==='__team_name'?'NOME / EQUIPE':questions.find(q=>q.id===id)?.label||`Pergunta registrada (${id.slice(0,8)})`;d.append(el('strong',{},label),el('p',{},String(value)))}box.append(d)}}
 function activateTab(name){for(const b of document.querySelectorAll('[data-tab]')){const active=b.dataset.tab===name;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active))}for(const n of ['settings','questions','reports'])$(`#tab-${n}`).classList.toggle('hidden',n!==name)}
 for(const b of document.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>activateTab(b.dataset.tab));
