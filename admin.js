@@ -50,7 +50,14 @@ function reportText(r) {
     .map(([label, value]) => `${label}: ${value}`)
     .join(' | ');
 }
-function renderReports(){const box=$('#submissions');box.replaceChildren();const query=($('#reportSearch')?.value||'').trim().toLocaleLowerCase('pt-BR');const filtered=reports.filter(r=>(new Date(r.created_at).toLocaleString('pt-BR')+' '+reportText(r)).toLocaleLowerCase('pt-BR').includes(query));$('#reportCount').textContent=String(reports.length);$('#reportSummary').textContent=`${filtered.length} de ${reports.length} relatório(s) carregado(s) — últimos 200 envios.`;if(!filtered.length){box.append(el('p',{className:'subtle'},query?'Nenhuma resposta corresponde à pesquisa.':'Nenhuma resposta recebida ainda.'));return}for(const r of filtered){const d=el('details',{className:'report'}),sum=el('summary',{},`${new Date(r.created_at).toLocaleString('pt-BR')} • ${r.answers?.__team_name||"Equipe não informada"} • Relatório ${r.id.slice(0,8)}`);d.append(sum);for(const [id,value] of Object.entries(r.answers||{})){const label=id==='__team_name'?'NOME / EQUIPE':questions.find(q=>q.id===id)?.label||`Pergunta registrada (${id.slice(0,8)})`;d.append(el('strong',{},label),el('p',{},String(value)))}box.append(d)}}
+function renderReports(){const box=$('#submissions');box.replaceChildren();const query=($('#reportSearch')?.value||'').trim().toLocaleLowerCase('pt-BR');const filtered=reports.filter(r=>(new Date(r.created_at).toLocaleString('pt-BR')+' '+reportText(r)).toLocaleLowerCase('pt-BR').includes(query));$('#reportCount').textContent=String(reports.length);$('#reportSummary').textContent=`${filtered.length} de ${reports.length} relatório(s) carregado(s) — últimos 200 envios.`;if(!filtered.length){box.append(el('p',{className:'subtle'},query?'Nenhuma resposta corresponde à pesquisa.':'Nenhuma resposta recebida ainda.'));return}for(const r of filtered){const d=el('details',{className:'report'}),sum=el('summary',{},`${new Date(r.created_at).toLocaleString('pt-BR')} • ${r.answers?.__team_name||"Equipe não informada"} • Relatório ${r.id.slice(0,8)}`);d.append(sum);
+for (const [label, value] of orderedAnswers(r)) {
+  d.append(
+    el('strong', {}, label),
+    el('p', {}, String(value))
+  );
+}
+{const label=id==='__team_name'?'NOME / EQUIPE':questions.find(q=>q.id===id)?.label||`Pergunta registrada (${id.slice(0,8)})`;d.append(el('strong',{},label),el('p',{},String(value)))}box.append(d)}}
 function activateTab(name){for(const b of document.querySelectorAll('[data-tab]')){const active=b.dataset.tab===name;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active))}for(const n of ['settings','questions','reports'])$(`#tab-${n}`).classList.toggle('hidden',n!==name)}
 for(const b of document.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>activateTab(b.dataset.tab));
 $('#reportSearch').addEventListener('input',renderReports);
