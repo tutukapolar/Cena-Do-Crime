@@ -57,7 +57,9 @@ for (const [label, value] of orderedAnswers(r)) {
     el('p', {}, String(value))
   );
 }
-{const label=id==='__team_name'?'NOME / EQUIPE':questions.find(q=>q.id===id)?.label||`Pergunta registrada (${id.slice(0,8)})`;d.append(el('strong',{},label),el('p',{},String(value)))}box.append(d)}}
+box.append(d);
+  }
+}
 function activateTab(name){for(const b of document.querySelectorAll('[data-tab]')){const active=b.dataset.tab===name;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active))}for(const n of ['settings','questions','reports'])$(`#tab-${n}`).classList.toggle('hidden',n!==name)}
 for(const b of document.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>activateTab(b.dataset.tab));
 $('#reportSearch').addEventListener('input',renderReports);
